@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import MapView from "react-native-map-clustering";
 import { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
@@ -13,6 +13,7 @@ import { FAB } from 'react-native-paper'
 import { graphql, useLazyQuery } from 'react-apollo';
 import { flowRight as compose } from 'lodash';
 import { isOnLine } from '../queries/query'
+import LottieView from 'lottie-react-native';
 
 const GOOGLE_PLACES_API_KEY = 'AIzaSyBvZX8lKdR6oCkPOn2z-xmw0JHMEzrM_6w';
 
@@ -40,9 +41,13 @@ const Directions = (props) => {
   const [to, setTo] = useState(null)
   const [toName, setToName] = useState(null)
   const [showStart, setShowStart] = useState(false)
+  const animation = useRef(null);
 
   const handleSearch = async () => {
     setShowSearch(true)
+    setTimeout(() => {
+      animation.current.play();
+    }, 200);
   }
 
   const [isOn, { called, loading, data }] = useLazyQuery(
@@ -53,7 +58,7 @@ const Directions = (props) => {
       }
     }
   );
-  
+
   const handleFrom = (data) => {
 
     var region = null
@@ -105,19 +110,20 @@ const Directions = (props) => {
     })
 
     coords = [...encoded]
-    console.log("This check: ", coords)
     isOn();
 
-    console.log("Data: ", data)
+    if (data) {
+      console.log("CHEDJASB: ", data)
+    }
 
     setShowSearch(false)
     setShowStart(true)
   }
 
-  if(called && loading){
+  if (called && loading) {
     console.log("Patience is virtue")
   }
-  if(data){
+  if (data) {
     console.log("CHEDJASB: ", data)
   }
 
@@ -247,6 +253,9 @@ const Directions = (props) => {
                 }
               }}
             >
+              <View style={{ height: height * 0.4, width: width, marginTop: height * 0.1 }}>
+                <LottieView ref={animation} source={require('../assets/Lottie/selectLoco.json')} loop={true} />
+              </View>
               <FAB
                 style={styles.fab1}
                 small
@@ -261,8 +270,13 @@ const Directions = (props) => {
               />
             </GooglePlacesAutocomplete>
           </GooglePlacesAutocomplete>
-          : <DirectionsMap from={from} to={to} toName={toName} fromName={fromName}  handleSearch={handleSearch} showStart={showStart} isOnLine={data}/>
-      }
+          : (
+            data && data.length != 0 ? (
+              <DirectionsMap from={from} to={to} toName={toName} fromName={fromName} handleSearch={handleSearch} showStart={showStart} isOnLine={data} />
+              ) : (
+              <DirectionsMap from={from} to={to} toName={toName} fromName={fromName} handleSearch={handleSearch} showStart={showStart} isOnLine={[]} />
+            )
+          )}
     </>
   )
 };

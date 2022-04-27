@@ -8,7 +8,8 @@ const stateMachine = {
         classifying: { on: { next: 'location', previous: 'initial'} },
         details: { on: { next: 'location', previous: 'initial'} },
         location: { on: { next: 'complete', previous: 'initial'} },
-        complete: { on: { next: 'awaitingUpload'}},
+        complete: { on: { next: 'success', previous: 'initial'}},
+        success: { on: { next: 'awaitingUpload'}},
     }
 }
 

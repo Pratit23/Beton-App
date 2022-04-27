@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from 'react'
 import MapView from "react-native-map-clustering";
 import { Marker, PROVIDER_GOOGLE } from "react-native-maps";
-import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
-import { Dimensions, View, StyleSheet, TouchableOpacity, Image, StatusBar } from 'react-native'
-import Constants from 'expo-constants';
-import Geocoder from 'react-native-geocoding';
-import { isEqual } from "lodash";
-import { Container, Header, Content, Icon, Text, Button } from 'native-base';
+const { width, height } = Dimensions.get("screen");
+const ASPECT_RATIO = width / height;
+import { List, ListItem, Button, Text } from 'native-base';
+import { ScrollView, Dimensions, View, Image } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Switch } from 'galio-framework';
 import {
     BallIndicator,
@@ -19,15 +18,8 @@ import {
     UIActivityIndicator,
     WaveIndicator,
 } from 'react-native-indicators';
-import AsyncStorage from '@react-native-async-storage/async-storage'
-const GOOGLE_PLACES_API_KEY = 'AIzaSyBvZX8lKdR6oCkPOn2z-xmw0JHMEzrM_6w';
-import AppleHeader from "react-native-apple-header";
-
-const { width, height } = Dimensions.get("screen");
-const ASPECT_RATIO = width / height;
-
-var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-var today = new Date()
+import ParallaxScrollView from 'react-native-parallax-scroll-view';
+import { Card, CardTitle, CardContent, CardAction, CardButton, CardImage } from 'react-native-material-cards'
 
 const darkStyle = [
     {
@@ -227,20 +219,26 @@ const lightStyle = [
     }
 ]
 
-function ClusterChild(props) {
 
-    const [initialRegion, setInitialRegion] = useState(props.initRegion)
+
+export default function Individual(props) {
+
+    console.log("Props in Indi: ", props)
+
+    const [initialRegion, setInitialRegion] = useState({
+        latitude: Number(props.indData.loco.split(" ")[0]),
+        longitude: Number(props.indData.loco.split(" ")[1]),
+        latitudeDelta: 0.08,
+        longitudeDelta: 0.08 * ASPECT_RATIO
+    })
     const [isLoading, setIsLoading] = useState(true)
     const [tempRegion, setTempRegion] = useState(null)
-
     const [toggle, setToggle] = useState(true)
+    const [title, setTitle] = useState(null)
 
-    const handleButton = () => {
-        props.handleSearch()
+    const goBack = () => {
+        props.back(false)
     }
-
-    // const [location, setLocation] = useState(null);
-    // const [errorMsg, setErrorMsg] = useState(null);
 
     useEffect(() => {
         setTimeout(async () => {
@@ -252,6 +250,8 @@ function ClusterChild(props) {
                 console.log("Error fetching location: ", e)
             }
         }, 1000)
+        var title = props.indData.address.split(',')
+        setTitle((title[title.length - 4] + ', ' + title[title.length - 3]).trim())
     }, [isLoading]);
 
     if (isLoading) {
@@ -264,70 +264,57 @@ function ClusterChild(props) {
     }
 
     return (
-        <View style={StyleSheet.absoluteFillObject}>
-            <StatusBar
-                animated={true}
-                barStyle='light-content' />
-            <AppleHeader dateTitle={today.toLocaleDateString("en-US", options)} containerStyle={{ paddingTop: height * 0.07, height: height * 0.15, paddingLeft: width * 0.04, backgroundColor: 'black' }} largeTitle='All Reports' largeTitleFontColor='#fff' />
-            <MapView
-                customMapStyle={toggle ? darkStyle : lightStyle}
-                loadingEnabled
-                initialRegion={initialRegion ? {
-                    ...initialRegion,
-                    latitudeDelta: 0.08,
-                    longitudeDelta: 0.08 * ASPECT_RATIO,
-                } : tempRegion}
-                onRegionChangeComplete={reg => {
-                    if (reg) {
-                        setInitialRegion(reg)
-                    }
-                }}
-                style={{ flex: 1 }} provider={PROVIDER_GOOGLE}>
-                {
-                    global.allMarkers && global.allMarkers.length > 0 ?
-                        global.allMarkers.map((marker, key) => {
-                            if (typeof (marker) != 'undefined') {
-                                return (
-                                    <Marker key={key} coordinate={{ latitude: Number(marker.location.split(" ")[0]), longitude: Number(marker.location.split(" ")[1]) }}><Image source={require('../imgs/pothole.png')} style={{ height: 35, width: 35 }} /></Marker>
-                                )
-                            }
-                        }) : null
-                }
-                <Button iconLeft onPress={() => handleButton()} style={{ top: height * 0.001, width: width * 0.2, left: 0.02 }} rounded><Icon name='search-outline' /></Button>
-                <Switch
-                    value={toggle}
-                    onChange={() => setToggle(!toggle)}
-                    style={{ left: width * 0.02, top: height * 0.02 }}
-                />
-            </MapView>
-        </View>
+        <>
+            {
+                props && props.indData ?
+                    <ParallaxScrollView
+                        backgroundColor="#cfd8dc"
+                        contentBackgroundColor="#cfd8dc"
+                        parallaxHeaderHeight={height * 0.55}
+                        renderForeground={() => (
+                            <Switch
+                                value={toggle}
+                                onChange={() => setToggle(!toggle)}
+                                style={{ top: height * 0.09, left: width * 0.85 }}
+                            />
+                        )}
+                        renderBackground={() => (
+                            <View style={{ height: height * 0.55, width: width }}>
+                                <MapView
+                                    customMapStyle={toggle ? darkStyle : lightStyle}
+                                    loadingEnabled
+                                    initialRegion={initialRegion ? {
+                                        ...initialRegion,
+                                        latitudeDelta: 0.08,
+                                        longitudeDelta: 0.08 * ASPECT_RATIO,
+                                    } : tempRegion}
+                                    onRegionChangeComplete={reg => {
+                                        if (reg) {
+                                            setInitialRegion(reg)
+                                        }
+                                    }}
+                                    style={{ flex: 1 }} provider={PROVIDER_GOOGLE}>
+                                    {
+                                        <Marker coordinate={{ latitude: initialRegion.latitude, longitude: initialRegion.longitude }}><Image source={require('../imgs/pothole.png')} style={{ height: 35, width: 35 }} /></Marker>
+                                    }
+                                </MapView>
+                            </View>
+                        )}
+                    >
+                        <View style={{ flex: 1, backgroundColor: '#cfd8dc' }}>
+                            <Card style={{ borderRadius: 24, backgroundColor: '#fff' }}>
+                                <CardTitle
+                                    title={title}
+                                    subtitle={props.indData.reportAt}
+                                />
+                                <CardContent text={props.indData.reportOn} />
+                                <CardContent text={props.indData.address} />
+                                <CardContent text={"Lat/Lng: " + props.indData.loco} />
+                            </Card>
+                        </View>
+                        <Button iconLeft onPress={() => goBack()} style={{ width: width, justifyContent: 'center', alignItems: 'center' }}><Text style={{ fontSize: 20, color: 'black' }}>Back</Text></Button>
+                    </ParallaxScrollView> : null
+            }
+        </>
     )
 }
-
-export default ClusterChild
-
-const styles = StyleSheet.create({
-    container: {
-        ...StyleSheet.absoluteFillObject,
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: height * 0.5,
-    },
-    map: {
-        ...StyleSheet.absoluteFillObject,
-    },
-    overlay: {
-        position: 'absolute',
-        top: height * 0.09,
-        backgroundColor: '#286FD4',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: height * 0.05,
-        width: width * 0.2,
-        right: width * 0.01,
-        borderRadius: 24
-    },
-    plainView: {
-        width: 60,
-    },
-});

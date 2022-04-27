@@ -51,13 +51,18 @@ function Main(props) {
     const [showSignInError, setShowSignInError] = useState(false)
     const [signInError, setSignInError] = useState(null)
     const [signInLoad, setSignInLoad] = useState(false)
+    
 
     useEffect(() => {
         setTimeout(async () => {
             //setIsLoading(false)
             let userToken = null
+            let splashCheck = null
             try {
                 userToken = await AsyncStorage.getItem('userToken')
+
+
+                console.log("Splash check: ", splashCheck)
                 // global.tempo = userToken
                 let { status } = await Location.requestPermissionsAsync();
                 if (status !== 'granted') {
@@ -211,8 +216,8 @@ function Main(props) {
         )
     }
 
-    const showLogin = () => {
-        setShowSignIn(true)
+    const showLogin = (show) => {
+        setShowSignIn(show)
     }
 
     return (
@@ -248,9 +253,9 @@ function Main(props) {
                                 activeTintColor: 'black',
                                 inactiveTintColor: 'grey',
                             }}
-                            appearence={{
-                                tabBarBackground: 'black',
-                                activeTabBackgrounds: ['#ffffff', '#e76f51', '#ffffff', '#ffffff', '#714FB6']
+                            appearance={{
+                                tabBarBackground: '#000000',
+                                activeTabBackgrounds: ['#ffffff', '#f44336', '#ffffff', '#ffffff', '#7768D8'],
                             }}
                         >
                             <Tab.Screen name="Home" component={HomePage} />
@@ -260,7 +265,7 @@ function Main(props) {
                             <Tab.Screen name="Profile" component={Profile} />
                             {/*<Tab.Screen name="TestMap" component={Acce} />*/}
                         </Tab.Navigator>
-                    </NavigationContainer> : showSignIn ? <SignUp showLogin={showLogin} /> : <Login show={showSignInError} signInError={signInError} load={signInLoad} />
+                    </NavigationContainer> : showSignIn ? <SignUp showLogin={showLogin} /> : <Login show={showSignInError} signInError={signInError} load={signInLoad} showLogin={showLogin}/>
             }
 
 

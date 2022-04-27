@@ -12,6 +12,8 @@ import { flowRight as compose } from 'lodash';
 import { graphql } from 'react-apollo'
 import { addBaseReport, addReport, decrypt, existingBaseCoordinate, findUsingZipCode } from '../queries/query'
 import { useLazyQuery } from 'react-apollo';
+import { Spinner } from 'native-base'
+import SkeletonPlaceholder from "react-native-skeleton-placeholder";
 
 const { width, height } = Dimensions.get('window');
 
@@ -52,10 +54,8 @@ const Nearby = (props) => {
                 })
 
                 var te = Object.keys(temp)
-                console.log("te: ", te)
 
                 var tee = Object.values(temp)
-                console.log("tee: ", tee)
 
                 if (te.length === 0 || tee.length === 0) {
                     setChartLabels([])
@@ -90,8 +90,8 @@ const Nearby = (props) => {
                         }}
                         width={width * 0.66} // from react-native
                         height={height * 0.25}
-                        yAxisLabel="$"
-                        yAxisSuffix="k"
+                        yAxisLabel=""
+                        yAxisSuffix=""
                         // withHorizontalLabels={false}
                         // withVerticalLabels={false}
                         yAxisInterval={1} // optional, defaults to 1
@@ -115,12 +115,16 @@ const Nearby = (props) => {
                         style={{
                             marginVertical: 8,
                             borderRadius: 16,
-                            paddingRight: 0,
                         }}
                         onDataPointClick={() => {
                             console.log("Clicked")
                         }}
-                    /> : <Text style={{ fontFamily: 'Lexand', fontSize: 20, color: 'white' }}>No data</Text>
+                    /> :
+                    <SkeletonPlaceholder highlightColor={'#ffffff'}>
+                        <View style={{ height: height * 0.25, width: width * 0.67, borderRadius: 16 }}>
+                            
+                        </View>
+                    </SkeletonPlaceholder>
             }
         </>
     )

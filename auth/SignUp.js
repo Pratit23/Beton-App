@@ -1,16 +1,25 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useRef } from "react";
 import {
     StyleSheet,
     ImageBackground,
     Dimensions,
     StatusBar,
     KeyboardAvoidingView,
-    ScrollView
+    ScrollView,
+    View,
+    Image
 } from "react-native";
-import { Block, Checkbox, Text, theme } from "galio-framework";
-import { Button, Icon, Input } from "../components";
+import { Block, Checkbox, Text, theme, Button } from "galio-framework";
+import { Icon, Input } from "../components";
 import { Images } from "../constants";
 import { AuthContext } from './context'
+import { selectHttpOptionsAndBody } from "@apollo/client";
+import DateTimePicker from '@react-native-community/datetimepicker';
+import LottieView from 'lottie-react-native';
+import { Container, Header, Content, Footer, FooterTab } from 'native-base'
+import { Col, Row, Grid } from "react-native-easy-grid";
+import GradientButton from 'react-native-gradient-buttons';
+import { useFonts } from 'expo-font';
 
 const { width, height } = Dimensions.get("screen");
 
@@ -53,8 +62,12 @@ const Register = (props) => {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [address, setAddress] = useState('')
-    const [dob, setDob] = useState('')
+    const [dob, setDob] = useState(new Date())
     const { signUp } = useContext(AuthContext)
+    const [emailError, setEmailError] = useState(false)
+    const [passError, setPassError] = useState(false)
+    const animation = useRef(null);
+    const [showTimePicker, setShowTimePicker] = useState(false)
 
     console.log("Name: ", name)
     console.log("Email: ", email)
@@ -62,192 +75,206 @@ const Register = (props) => {
     console.log("Address: ", address)
     console.log("DOB: ", dob)
 
+    const checkEmail = (text) => {
+        setEmail(text)
+        if (!(/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(email))) {
+            setEmailError(true)
+        } else {
+            setEmailError(false)
+            console.log("test")
+        }
+    }
+    const checkPassword = (text) => {
+        setPassword(text)
+        if (!(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,10}$/.test(password))) {
+            setPassError(true)
+        } else {
+            setPassError(false)
+            console.log("test")
+        }
+    }
+
     const signUpHandle = () => {
-        signUp(name, email, password, address, dob)
+        if (!emailError && !passError && address !== '') {
+            signUp(name, email, password, address, dob)
+        } else {
+            alert('Please fill all the required fields')
+        }
+    }
+
+    const valDob = (selectDate) => {
+        setDob(selectDate)
+        console.log("Selected dob: ", dob)
     }
 
     const sendVal = () => {
-        props.showLogin()
+        props.showLogin(false)
     }
 
-    return (
-        <Block flex middle>
-            <StatusBar hidden />
-            <ImageBackground
-                source={require('../imgs/register-bg.png')}
-                style={{ width, height, zIndex: 1 }}
-            >
-                <Block flex middle>
-                    <Block style={styles.registerContainer}>
-                        <Block flex={0.25} middle style={styles.socialConnect}>
-                            <Text color="#8898AA" size={12}>
-                                Sign up with
-                            </Text>
-                            <Block row style={{ marginTop: theme.SIZES.BASE }}>
-                                <Button style={{ ...styles.socialButtons, marginRight: 30 }}>
-                                    <Block row>
-                                        <Icon
-                                            name="logo-github"
-                                            family="Ionicon"
-                                            size={14}
-                                            color={"black"}
-                                            style={{ marginTop: 2, marginRight: 5 }}
-                                        />
-                                        <Text style={styles.socialTextButtons}>GITHUB</Text>
-                                    </Block>
-                                </Button>
-                                <Button onPress={() => sendVal()} style={styles.socialButtons}>
-                                    <Block row>
-                                        <Icon
-                                            name="logo-google"
-                                            family="Ionicon"
-                                            size={14}
-                                            color={"black"}
-                                            style={{ marginTop: 2, marginRight: 5 }}
-                                        />
-                                        <Text style={styles.socialTextButtons}>GOOGLE</Text>
-                                    </Block>
-                                </Button>
-                            </Block>
-                        </Block>
-                        <Block flex>
-                            <Block flex={0.17} middle>
-                                <Text color="#8898AA" size={12}>
-                                    Or sign up the classic way
-                        </Text>
-                            </Block>
-                            <ScrollView>
-                                <Block flex center>
-                                    <KeyboardAvoidingView
-                                        style={{ flex: 1 }}
-                                        behavior="padding"
-                                        enabled
-                                    >
-                                        <Block width={width * 0.8} style={{ marginBottom: 15 }}>
-                                            <Input
-                                                onChangeText={(text) => setName(text)}
-                                                borderless
-                                                placeholder="Name"
-                                                iconContent={
-                                                    <Icon
-                                                        size={16}
-                                                        color={argonTheme.COLORS.ICON}
-                                                        name="hat-3"
-                                                        family="ArgonExtra"
-                                                        style={styles.inputIcons}
-                                                    />
-                                                }
-                                            />
-                                        </Block>
-                                        <Block width={width * 0.8} style={{ marginBottom: 15 }}>
-                                            <Input
-                                                onChangeText={(text) => setEmail(text)}
-                                                borderless
-                                                placeholder="Email"
-                                                iconContent={
-                                                    <Icon
-                                                        size={16}
-                                                        color={argonTheme.COLORS.ICON}
-                                                        name="ic_mail_24px"
-                                                        family="ArgonExtra"
-                                                        style={styles.inputIcons}
-                                                    />
-                                                }
-                                            />
-                                        </Block>
-                                        <Block width={width * 0.8}>
-                                            <Input
-                                                onChangeText={(text) => setPassword(text)}
-                                                password
-                                                borderless
-                                                placeholder="Password"
-                                                iconContent={
-                                                    <Icon
-                                                        size={16}
-                                                        color={argonTheme.COLORS.ICON}
-                                                        name="padlock-unlocked"
-                                                        family="ArgonExtra"
-                                                        style={styles.inputIcons}
-                                                    />
-                                                }
-                                            />
-                                            <Block row style={styles.passwordCheck}>
-                                                <Text size={12} color={argonTheme.COLORS.MUTED}>
-                                                    password strength:
-                                                </Text>
-                                                <Text bold size={12} color={argonTheme.COLORS.SUCCESS}>
-                                                    {" "}
-                                                strong
-                                            </Text>
-                                            </Block>
-                                        </Block>
-                                        <Block width={width * 0.8} style={{ marginBottom: 15 }}>
-                                            <Input
-                                                onChangeText={(text) => setAddress(text)}
-                                                borderless
-                                                placeholder="Address"
-                                                iconContent={
-                                                    <Icon
-                                                        size={16}
-                                                        color={argonTheme.COLORS.ICON}
-                                                        name="ic_mail_24px"
-                                                        family="ArgonExtra"
-                                                        style={styles.inputIcons}
-                                                    />
-                                                }
-                                            />
-                                        </Block>
-                                        <Block width={width * 0.8} style={{ marginBottom: 15 }}>
-                                            <Input
-                                                onChangeText={(text) => setDob(text)}
-                                                borderless
-                                                placeholder="DOB"
-                                                iconContent={
-                                                    <Icon
-                                                        size={16}
-                                                        color={argonTheme.COLORS.ICON}
-                                                        name="ic_mail_24px"
-                                                        family="ArgonExtra"
-                                                        style={styles.inputIcons}
-                                                    />
-                                                }
-                                            />
-                                        </Block>
+    const [loaded] = useFonts({
+        Lexand: require('../assets/font/LexendDeca-Regular.ttf'),
+    });
 
-                                        <Block row width={width * 0.75}>
-                                            <Checkbox
-                                                checkboxStyle={{
-                                                    borderWidth: 3
-                                                }}
-                                                color={argonTheme.COLORS.PRIMARY}
-                                                label="I agree with the"
-                                            />
-                                            <Button
-                                                style={{ width: 100 }}
-                                                color="transparent"
-                                                textStyle={{
-                                                    color: argonTheme.COLORS.PRIMARY,
-                                                    fontSize: 14
-                                                }}
-                                            >
-                                                Privacy Policy
-                                            </Button>
-                                        </Block>
-                                        <Block middle>
-                                            <Button onPress={() => signUpHandle()} color="primary" style={styles.createButton}>
-                                                <Text bold size={14} color={argonTheme.COLORS.WHITE}>
-                                                    CREATE ACCOUNT
-                                        </Text>
-                                            </Button>
-                                        </Block>
-                                    </KeyboardAvoidingView>
-                                </Block>
-                            </ScrollView>
-                        </Block>
-                    </Block>
-                </Block>
-            </ImageBackground>
-        </Block>
+    useEffect(() => {
+        setTimeout(() => {
+            animation.current.play();
+        }, 200);
+    }, [])
+
+    return (
+        <Container style={{ backgroundColor: 'rgb(35, 37, 47)' }}>
+            <Grid>
+                <Row size={1.5} style={{ backgroundColor: 'rgb(35, 37, 47)', justifyContent: 'center', alignItems: 'center' }}>
+                    <View style={{ height: height * 0.6, width: width * 0.6, marginBottom: height * 0.06 }}>
+                        <LottieView ref={animation} source={require('../assets/Lottie/signUpBack.json')} loop={true} />
+                    </View>
+                </Row>
+                <View style={{ height: height * 0.12, width: width, position: 'absolute', marginTop: height * 0.27 }}>
+                    <Image style={{ height: '100%', width: '100%' }} source={require('../imgs/wave-haikei.png')} />
+                </View>
+                <View style={{ height: height * 0.12, width: width, position: 'absolute', marginTop: height * 0.13, marginLeft: width * 0.29 }}>
+                    {
+                        loaded ?
+                            <Text style={{ fontFamily: 'Lexand', fontSize: 50, color: 'white' }}>Sign Up</Text> : null
+                    }
+                </View>
+                <Row size={2} style={{ backgroundColor: '#fff' }}>
+                    <ScrollView>
+                        <Col style={{ justifyContent: 'center', alignItems: 'center', paddingTop: height * 0.02 }}>
+                            <Block width={width * 0.8} style={{ marginBottom: 15, borderBottomWidth: 1, borderStyle: 'solid', borderColor: '#D2D2D2' }}>
+                                <Input
+                                    onChangeText={(text) => setName(text)}
+                                    borderless
+                                    placeholder="Name"
+                                    iconContent={
+                                        <Icon
+                                            size={16}
+                                            color={argonTheme.COLORS.ICON}
+                                            name="hat-3"
+                                            family="ArgonExtra"
+                                            style={styles.inputIcons}
+                                        />
+                                    }
+                                    style={{
+                                        backgroundColor: 'transparent'
+                                    }}
+                                />
+                            </Block>
+                            <Block width={width * 0.8} style={{ marginBottom: 15, borderBottomWidth: 1, borderStyle: 'solid', borderColor: '#D2D2D2' }}>
+                                <Input
+                                    onChangeText={(text) => checkEmail(text)}
+                                    borderless
+                                    placeholder="Email"
+                                    iconContent={
+                                        <Icon
+                                            size={16}
+                                            color={argonTheme.COLORS.ICON}
+                                            name="ic_mail_24px"
+                                            family="ArgonExtra"
+                                            style={styles.inputIcons}
+                                        />
+                                    }
+                                    style={{
+                                        backgroundColor: 'transparent',
+                                    }}
+                                />
+                            </Block>
+                            {
+
+                                emailError && loaded ?
+                                    <Text color="red" size={12}>Please enter a valid email address!</Text> : null
+
+                            }
+                            <Block width={width * 0.8} style={{ marginBottom: 15, borderBottomWidth: 1, borderStyle: 'solid', borderColor: '#D2D2D2' }}>
+                                <Input
+                                    onChangeText={(text) => checkPassword(text)}
+                                    password
+                                    borderless
+                                    placeholder="Password"
+                                    iconContent={
+                                        <Icon
+                                            size={16}
+                                            color={argonTheme.COLORS.ICON}
+                                            name="padlock-unlocked"
+                                            family="ArgonExtra"
+                                            style={styles.inputIcons}
+                                        />
+                                    }
+                                    style={{
+                                        backgroundColor: 'transparent'
+                                    }}
+                                />
+                                {
+                                    passError ?
+                                        <Text color="red" size={12}>8-10 characters, one uppercase, one lowercase, one number, one special character (atleast)</Text> : null
+                                }
+                            </Block>
+                            <Block width={width * 0.8} style={{ marginBottom: 15, borderBottomWidth: 1, borderStyle: 'solid', borderColor: '#D2D2D2' }}>
+                                <Input
+                                    onChangeText={(text) => setAddress(text)}
+                                    borderless
+                                    placeholder="Address"
+                                    iconContent={
+                                        <Icon
+                                            size={16}
+                                            color={argonTheme.COLORS.ICON}
+                                            name="ic_mail_24px"
+                                            family="ArgonExtra"
+                                            style={styles.inputIcons}
+                                        />
+                                    }
+                                    style={{
+                                        backgroundColor: 'transparent'
+                                    }}
+                                />
+                            </Block>
+                            <Block width={width * 0.8} style={{ marginBottom: 15 / height, marginLeft: width * 0.09 }}>
+                                <Row>
+                                    <Col>
+                                        {
+                                            showTimePicker ?
+                                                <DateTimePicker
+                                                    testID="dateTimePicker"
+                                                    value={dob}
+                                                    mode={'date'}
+                                                    is24Hour={false}
+                                                    display="default"
+                                                    onChange={() => valDob}
+                                                /> : loaded ? <Button onPress={() => setShowTimePicker(true)} shadowless={true} style={{ fontFamily: 'Lexand', fontSize: 17, backgroundColor: '#F1EFF2', height: height * 0.035, marginTop: height * 0.004, marginLeft: 0, width: width * 0.26 }}><Text style={{ color: '#44A0F7', fontFamily: 'Lexand', fontSize: 16 }}>Select DOB</Text></Button> : null
+                                        }
+                                    </Col>
+                                    <Col style={{ justifyContent: 'center', alignItems: 'center' }}>
+                                        {
+                                            loaded ?
+                                                <Button shadowless={true} style={{ fontFamily: 'Lexand', fontSize: 17, backgroundColor: '#F1EFF2', height: height * 0.035, marginTop: height * 0.004, marginRight: width * 0.1 }}><Text style={{ color: '#44A0F7', fontFamily: 'Lexand', fontSize: 16 }}>Upload Picture</Text></Button> : null
+                                        }
+                                    </Col>
+                                </Row>
+                            </Block>
+                            <Block middle style={{ marginTop: height * 0.05 }}>
+                                {
+                                    loaded ?
+                                        <Text onPress={() => sendVal()} style={{ fontFamily: 'Lexand', fontSize: 17, color: '#F21B3F' }}>or Sign In</Text> : null
+                                }
+                            </Block>
+                        </Col>
+                    </ScrollView>
+                </Row>
+                <View style={{ height: height * 0.1, width: width, paddingRight: width * 0.1, paddingLeft: width * 0.08, backgroundColor: 'white', justifyContent: 'center', alignItems: 'center' }}>
+                    <GradientButton
+                        text="Create"
+                        gradientBegin="#F21B3F"
+                        gradientEnd="#D9594C"
+                        gradientDirection="diagonal"
+                        width={'100%'}
+                        height={'60%'}
+                        impact
+                        impactStyle='Heavy'
+                        onPressAction={() => signUpHandle()}
+                    />
+                </View>
+            </Grid>
+        </Container>
     );
 }
 
@@ -255,7 +282,7 @@ const styles = StyleSheet.create({
     registerContainer: {
         width: width * 0.9,
         height: height * 0.85,
-        backgroundColor: "#F4F5F7",
+        backgroundColor: "rgba(244, 245, 247, 0.7)",
         borderRadius: 4,
         shadowColor: argonTheme.COLORS.BLACK,
         shadowOffset: {
@@ -266,7 +293,8 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         elevation: 1,
         overflow: "hidden",
-        top: height * 0.03
+        top: height * 0.03,
+        borderRadius: 24
     },
     socialConnect: {
         backgroundColor: argonTheme.COLORS.WHITE,

@@ -12,6 +12,8 @@ import { flowRight as compose } from 'lodash';
 import { graphql } from 'react-apollo'
 import { addBaseReport, addReport, decrypt, existingBaseCoordinate } from '../queries/query'
 import { useLazyQuery } from 'react-apollo';
+import { Spinner } from 'native-base'
+import SkeletonPlaceholder from "react-native-skeleton-placeholder";
 
 const { width, height } = Dimensions.get('window');
 
@@ -66,14 +68,11 @@ const Nearby = (props) => {
                         temp[combined] = 1
                     } else {
                         temp[combined] = temp[combined] + 1
-                        console.log("ne  no: ", temp[combined])
                     }
                 })
                 var te = Object.keys(temp)
-                console.log("te: ", te)
 
                 var tee = Object.values(temp)
-                console.log("tee: ", tee)
 
                 if (te.length === 0 || tee.length === 0) {
                     setChartLabels([])
@@ -83,9 +82,10 @@ const Nearby = (props) => {
                         let v = t.substr(0, 5)
                         return v
                     })
-                    c.slice(c.length - 5, c.length)
-                    setChartLabels(c)
-                    setChartData(tee)
+                    var b = c.slice(c.length - 5, c.length)
+                    var x = tee.slice(tee.length - 5, tee.length)
+                    setChartLabels(b)
+                    setChartData(x)
                     setLoad(false)
                 }
             }
@@ -108,8 +108,8 @@ const Nearby = (props) => {
                         }}
                         width={width * 0.66} // from react-native
                         height={height * 0.25}
-                        yAxisLabel="$"
-                        yAxisSuffix="k"
+                        yAxisLabel=""
+                        yAxisSuffix=""
                         // withHorizontalLabels={false}
                         // withVerticalLabels={false}
                         yAxisInterval={1} // optional, defaults to 1
@@ -121,7 +121,7 @@ const Nearby = (props) => {
                             color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
                             labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
                             style: {
-                                borderRadius: 16
+                                borderRadius: 16,
                             },
                             propsForDots: {
                                 r: "6",
@@ -133,12 +133,16 @@ const Nearby = (props) => {
                         style={{
                             marginVertical: 8,
                             borderRadius: 16,
-                            paddingRight: 0,
                         }}
                         onDataPointClick={() => {
                             console.log("Clicked")
                         }}
-                    /> : <Text style={{ fontFamily: 'Lexand', fontSize: 20, color: 'white' }}>No data</Text>
+                    /> :
+                    <SkeletonPlaceholder highlightColor={'#ffffff'}>
+                        <View style={{ height: height * 0.25, width: width * 0.67, borderRadius: 16 }}>
+
+                        </View>
+                    </SkeletonPlaceholder>
             }
         </>
     )

@@ -4,7 +4,7 @@
     "slug": "beton",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/beton_logo.png",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -22,7 +22,7 @@
       "config": {
         "googleMapsApiKey": "AIzaSyBxFN97CAHBgcjppdSfxd8CZOT7x1JL_dI"
       },
-      "buildNumber": "1.0.4",
+      "buildNumber": "1.1.4",
       "infoPlist": {
         "UIBackgroundModes": [
           "location",

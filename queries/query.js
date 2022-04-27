@@ -12,8 +12,8 @@ const users = gql`
 `
 
 const addUser = gql`
-mutation($name: String!, $email: String!, $password: String!, $dob: String!, $address: String!){
-    addUser(name: $name, email: $email, password: $password, dob: $dob, address: $address){
+mutation($name: String!, $email: String!, $password: String!, $dob: String!, $address: String!, $profile: String!){
+    addUser(name: $name, email: $email, password: $password, dob: $dob, address: $address, profile: $profile){
       name
       email
       password
@@ -60,6 +60,19 @@ mutation($image: String!, $address: String!, $location: String!, $reportedAt: St
   }
 }
 `;
+const addFeedbackReport = gql`
+mutation($image: String!, $address: String!, $location: String!, $reportedAt: String!, $reportedOn: String!, $userID: ID!, $noOfReports: Int!){
+  addFeedbackReport(image: $image, address: $address, location: $location, reportedAt: $reportedAt, reportedOn: $reportedOn, userID: $userID, noOfReports: $noOfReports){
+    id
+    location
+    userID{
+      id
+      name
+      email
+    }
+  }
+}
+`;
 
 const addReport = gql`
 mutation($image: String!, $address: String!, $location: String!, $reportedAt: String!, $reportedOn: String!, $userID: ID!, $baseParent: ID!, $karma: Int!){
@@ -92,6 +105,9 @@ query($token: String){
     id
     karma
     reports {
+      id
+      location
+      address
       reportedAt
       reportedOn
     }
@@ -120,6 +136,10 @@ query($token: String){
       name
       validity
       amount
+      assigned
+      userID{
+        name
+      }
     }
   }
 }
@@ -200,7 +220,10 @@ query($zip:String!) {
 
 const isOnLine = gql`
 query($encoded: [String]){
-  isOnLine(encoded: $encoded)
+  isOnLine(encoded: $encoded){
+    latitude
+    longitude
+  }
 }
 `
 
@@ -230,6 +253,7 @@ const allAdvertisers = gql`
       screentime
       outreach
       when
+      image
     }
   }
 }
@@ -246,37 +270,52 @@ mutation($title: String!, $link: String!, $image: String!, $when: String!, $adve
 }
 `
 
-const allMyAds = gql`
-query($token: String!){
-  allMyAds(token: $token){
+const deleteThisAdd = gql`
+mutation($id: ID!, $advertiserID: ID!){
+  deleteThisAdd(id: $id, advertiserID: $advertiserID)
+}
+`
+
+const getRandomAd = gql`
+{
+  getRandomAd{
+    id
     title
     link
     image
     screentime
     when
     outreach
+    advertiserID{
+      id
+      email
+      company
+    }
+  }
+}
+`
+
+const allMyAds = gql`
+query($token: String!){
+  allMyAds(token: $token){
+    id
+    title
+    link
+    image
+    screentime
+    when
+    outreach
+    advertiserID{
+      id
+      email
+    }
   }
 }
 `
 
 const addCoupon = gql`
-mutation($name: String!, $amount: String!, $validity: String!, $advertiserID: ID!){
-  addCoupon(name: $name, amount: $amount, validity: $validity, advertiserID: $advertiserID){
-    name
-    amount
-    validity
-    assigned
-    advertiserID{
-      company 
-      email
-      id
-    }
-    userID{
-      name
-      email
-      id
-    }
-  }
+mutation($coupons: [CouponsInput]!, $advertiserID: ID!){
+  addCoupon(coupons: $coupons, advertiserID: $advertiserID)
 }
 `
 
@@ -285,6 +324,25 @@ mutation($coords: [InputAccReport]!){
   AddAccReport(coords: $coords)
 }
 `
+
+const updateAdd = gql`
+mutation($id: ID!, $screentime: Int!){
+  updateAdd(id: $id, screentime: $screentime){
+    id
+    title
+    link
+    image
+    screentime
+    when
+    outreach
+    advertiserID{
+      id
+      email
+    }
+  }
+}
+`
+
 
 export {
   users,
@@ -304,7 +362,11 @@ export {
   addAdvertisment,
   allMyAds,
   addCoupon,
-  AddAccReport
+  AddAccReport,
+  deleteThisAdd,
+  getRandomAd,
+  updateAdd,
+  addFeedbackReport
 };
 
 

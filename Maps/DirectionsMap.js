@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView from "react-native-map-clustering";
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
-import { Dimensions, View, StyleSheet, TouchableOpacity } from 'react-native'
+import { Dimensions, View, StyleSheet, TouchableOpacity, Image } from 'react-native'
 import Constants from 'expo-constants';
 import Geocoder from 'react-native-geocoding';
 import { isEqual, set } from "lodash";
@@ -32,6 +33,8 @@ import { Audio } from 'expo-av';
 import { flowRight as compose } from 'lodash';
 import { graphql } from 'react-apollo'
 import { decrypt, AddAccReport } from '../queries/query'
+import { WebView } from 'react-native-webview';
+import { StatusBar } from 'expo-status-bar';
 
 
 
@@ -243,6 +246,13 @@ const lightStyle = [
     }
 ]
 
+var prevLocation = {
+    coords: {
+        latitude: 9999,
+        longitude: 9999
+    }
+}
+
 
 const DirectionsMap = (props) => {
 
@@ -254,6 +264,7 @@ const DirectionsMap = (props) => {
     const [toggle, setToggle] = useState(true)
     const [enc, setEnc] = useState(true)
     const [isOpen, setIsOpen] = useState(false)
+    const [showMap, setShowMap] = useState(false)
 
     const handleButton = () => {
         props.handleSearch()
@@ -270,6 +281,19 @@ const DirectionsMap = (props) => {
     // variables
     const snapPoints = useMemo(() => ['50%', '100%'], []);
     const [showMessage, setShowMessage] = useState(false)
+
+    const unsubscribe = () => {
+        subscription && subscription.remove();
+        setSubscription(null);
+    };
+
+    const startNavigation = () => {
+        if (props.from != null) {
+            getDirections()
+        } else {
+            alert("Please select source and destinaton")
+        }
+    }
 
     const handleGetDirections = async () => {
         if (props.from != null) {
@@ -294,86 +318,171 @@ const DirectionsMap = (props) => {
                 ],
             }
 
-            console.log("prarararap", props)
+            //getDirections(data)
 
-            getDirections(data)
+            setSubscription(
+                // Accelerometer.addListener(async (accelerometerData) => {
+                //     if (accelerometerData.y <= -1.3) {
+                //         let newLocation = await Location.getCurrentPositionAsync({
+                //             maximumAge: 60000, // only for Android
+                //             accuracy: Location.Accuracy.Lowest,
+                //         })
+                //         console.log("Hmmmm: ", newLocation, prevLocation)
+                //         if ((newLocation.coords.latitude) != (prevLocation.coords.latitude)) {
+                //             console.log("LOCATION CHANGEDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
+                //             if (newLocation) {
+                //                 var x = newLocation.coords.latitude + ' ' + newLocation.coords.longitude
+                //                 console.log("X: ", x)
+                //                 let obj = {
+                //                     location: x,
+                //                     userID: props.decrypt.decrypt.id,
+                //                     reportedAt: new Date().toDateString(),
+                //                     reportedOn: new Date().toLocaleString().split(", ")[1]
+                //                 }
+                //                 console.log("boah boah boah boah boah", obj)
+                //                 normalArray.push(obj);
+                //                 console.log("Pothole detected!")
+                //             }
+
+                //             let res = await props.AddAccReport({
+                //                 variables: {
+                //                     coords: normalArray
+                //                 }
+                //             })
+                //             console.log("AFter mathttt ----", res);
+                //             console.log("Document write here!");
+                //             normalArray = []
+
+                //             prevLocation = {
+                //                 ...newLocation
+                //             }
+                //         } else {
+                //             console.log("Location not changed")
+                //         }
+
+                //     }
+                // })
+                Accelerometer.addListener(async (accelerometerData) => {
+                    if (accelerometerData.y <= -1.25) {
+                        console.log("New location: ", newLocation)
+                        let newLocation = await Location.getCurrentPositionAsync({
+                            maximumAge: 60000, // only for Android
+                            accuracy: Location.Accuracy.Lowest,
+                        })
+                        console.log("New location: ", newLocation)
+                        if (newLocation) {
+                            var x = newLocation.coords.latitude + ' ' + newLocation.coords.longitude
+                            console.log("X: ", x)
+                            let obj = {
+                                location: x,
+                                userID: props.decrypt.decrypt.id,
+                                reportedAt: new Date().toDateString(),
+                                reportedOn: new Date().toLocaleString().split(", ")[1]
+                            }
+                            console.log("boah boah boah boah boah", obj)
+                            normalArray.push(obj);
+                            console.log("Pothole detected!")
+                            if (normalArray != []) {
+                                let res = await props.AddAccReport({
+                                    variables: {
+                                        coords: normalArray
+                                    }
+                                })
+                                console.log("AFter mathttt ----", res);
+                                console.log("Document write here!");
+                                normalArray = []
+                            } else {
+                                console.log("this shits empty dawg.")
+                            }
+                        }
+                    }
+                })
+            )
+            // console.log("Zoom zoom: ", accelerometerData)
+            setShowMap(true)
         } else {
             alert("Please select source and destinaton")
         }
     }
 
-    TaskManager.defineTask(
-        "LOCATION_TASK_NAME",
-        async ({ data, error }) => {
-            if (error) {
-                console.log("I GOT AN ERROR", error);
-                return;
-            }
-            if (data) {
-                console.log("Background task working")
-                try {
-                    const { sound } = await Audio.Sound.createAsync(
-                        require('../assets/Sounds/donefor.mp3')
-                    );
-                    await sound.playAsync();
-                } catch {
-                    console.log("Error playing sound!")
-                }
-                try {
-                    Accelerometer.addListener(async (accelerometerData) => {
-                        if (accelerometerData.y <= -1.25) {
-                            console.log("New location: ", newLocation)
-                            let newLocation = await Location.getCurrentPositionAsync({
-                                maximumAge: 60000, // only for Android
-                                accuracy: Location.Accuracy.Lowest,
-                            })
-                            console.log("New location: ", newLocation)
-                            if (newLocation) {
-                                var x = newLocation.coords.latitude + ' ' + newLocation.coords.longitude
-                                console.log("X: ", x)
-                                let obj = {
-                                    location: x,
-                                    userID: props.decrypt.decrypt.id,
-                                    reportedAt: new Date().toDateString(),
-                                    reportedOn: new Date().toLocaleString().split(", ")[1]
-                                }
-                                console.log("boah boah boah boah boah", obj)
-                                normalArray.push(obj);
-                                console.log("Pothole detected!")
-                                if (normalArray != []) {
-                                    let res = await props.AddAccReport({
-                                        variables: {
-                                            coords: normalArray
-                                        }
-                                    })
-                                    console.log("AFter mathttt ----", res);
-                                    console.log("Document write here!");
-                                    normalArray = []
-                                } else {
-                                    console.log("this shits empty dawg.")
-                                }
-                            }
-                        }
-                    })
-                    // console.log("Zoom zoom: ", accelerometerData)
-                } catch {
-                    console.log("Array hai ye", normalArray);
-                    if (normalArray != []) {
-                        let res = await props.AddAccReport({
-                            variables: {
-                                coords: normalArray
-                            }
-                        })
-                        console.log("AFter mathttt ----", res);
-                        console.log("Document write here!");
-                        normalArray = []
-                    } else {
-                        console.log("this shits empty dawg.")
-                    }
-                }
-            }
-        }
-    );
+    const resetting = () => {
+        subscription && subscription.remove();
+        setSubscription(null);
+        setShowMap(false)
+    }
+
+    // TaskManager.defineTask(
+    //     "LOCATION_TASK_NAME",
+    //     async ({ data, error }) => {
+    //         if (error) {
+    //             console.log("I GOT AN ERROR", error);
+    //             return;
+    //         }
+    //         if (data) {
+    //             console.log("Background task working")
+    //             try {
+    //                 const { sound } = await Audio.Sound.createAsync(
+    //                     require('../assets/Sounds/donefor.mp3')
+    //                 );
+    //                 await sound.playAsync();
+    //             } catch {
+    //                 console.log("Error playing sound!")
+    //             }
+    //             try {
+    //                 Accelerometer.addListener(async (accelerometerData) => {
+    //                     if (accelerometerData.y <= -1.25) {
+    //                         console.log("New location: ", newLocation)
+    //                         let newLocation = await Location.getCurrentPositionAsync({
+    //                             maximumAge: 60000, // only for Android
+    //                             accuracy: Location.Accuracy.Lowest,
+    //                         })
+    //                         console.log("New location: ", newLocation)
+    //                         if (newLocation) {
+    //                             var x = newLocation.coords.latitude + ' ' + newLocation.coords.longitude
+    //                             console.log("X: ", x)
+    //                             let obj = {
+    //                                 location: x,
+    //                                 userID: props.decrypt.decrypt.id,
+    //                                 reportedAt: new Date().toDateString(),
+    //                                 reportedOn: new Date().toLocaleString().split(", ")[1]
+    //                             }
+    //                             console.log("boah boah boah boah boah", obj)
+    //                             normalArray.push(obj);
+    //                             console.log("Pothole detected!")
+    //                             if (normalArray != []) {
+    //                                 let res = await props.AddAccReport({
+    //                                     variables: {
+    //                                         coords: normalArray
+    //                                     }
+    //                                 })
+    //                                 console.log("AFter mathttt ----", res);
+    //                                 console.log("Document write here!");
+    //                                 normalArray = []
+    //                             } else {
+    //                                 console.log("this shits empty dawg.")
+    //                             }
+    //                         }
+    //                     }
+    //                 })
+    //                 // console.log("Zoom zoom: ", accelerometerData)
+    //             } catch {
+    //                 console.log("Array hai ye", normalArray);
+    //                 if (normalArray != []) {
+    //                     let res = await props.AddAccReport({
+    //                         variables: {
+    //                             coords: normalArray
+    //                         }
+    //                     })
+    //                     console.log("AFter mathttt ----", res);
+    //                     console.log("Document write here!");
+    //                     normalArray = []
+    //                 } else {
+    //                     console.log("this shits empty dawg.")
+    //                 }
+    //             }
+    //         }
+    //     }
+    // );
 
 
     useEffect(() => {
@@ -388,13 +497,6 @@ const DirectionsMap = (props) => {
         }, 1000)
     }, [isLoading]);
 
-    useEffect(() => {
-        Location.startLocationUpdatesAsync("LOCATION_TASK_NAME", {
-            accuracy: Location.Accuracy.Balanced,
-            timeInterval: 500,
-            distanceInterval: 10,
-        });
-    })
 
     if (isLoading) {
         return (
@@ -405,42 +507,45 @@ const DirectionsMap = (props) => {
         )
     }
 
-    const renderContent = () => (
-        <View
-            style={{
-                backgroundColor: '#F5F5F5',
-                paddingRight: 16,
-                paddingLeft: 16,
-                height: 450,
-            }}
-        >
-            <View style={{ height: height * 0.25 }}>
-                <Card style={{ height: height * 0.2, backgroundColor: '#FFF', borderRadius: 24, justifyContent: 'center', alignItems: 'center' }}>
-                    {
-                        props.isOnLine ?
-                            <>
-                                <Text style={{ fontFamily: 'Lexand', fontSize: 70, color: '#454649' }}>{props.isOnLine.isOnLine}{props.isOnLine.isOnLine == 1 ? <Text style={{ fontFamily: 'Lexand', fontSize: 15 }}>pothole on route</Text> : <Text style={{ fontFamily: 'Lexand', fontSize: 15 }}>potholes on route</Text>}</Text>
-                                <Text style={{ fontFamily: 'Lexand', fontSize: 20, color: '#454649' }}>{props.fromName}  •••••••  {props.toName}</Text>
-                                {
-                                    props.isOnLine.isOnLine == 0 ? <Text style={{ fontFamily: 'Lexand', fontSize: 15, color: '#dd2c00', marginTop: height * 0.01 }}>Smoooooth Operator!</Text> : null
-                                }
-                                {
-                                    props.isOnLine.isOnLine <= 5 && props.isOnLine.isOnLine > 0 ? <Text style={{ fontFamily: 'Lexand', fontSize: 15, color: '#1b5e20', marginTop: height * 0.01 }}>Should be a fairly smooth ride!</Text> : null
-                                }
-                                {
-                                    props.isOnLine.isOnLine > 5 && props.isOnLine.isOnLine < 20 ? <Text style={{ fontFamily: 'Lexand', fontSize: 15, color: '#b71c1c', marginTop: height * 0.01 }}>A few bumps, you should be fine!</Text> : null
-                                }
-                                {
-                                    props.isOnLine.isOnLine > 20 ? <Text style={{ fontFamily: 'Lexand', fontSize: 15, color: '#00c853', marginTop: height * 0.01 }}>You should consider an alternative route!</Text> : null
-                                }
+    const renderContent = () => {
+        return (
+            <View
+                style={{
+                    backgroundColor: '#F5F5F5',
+                    paddingRight: 16,
+                    paddingLeft: 16,
+                    height: 450,
+                }}
+            >
+                <StatusBar style="light" />
+                <View style={{ height: height * 0.25 }}>
+                    <Card style={{ height: height * 0.2, backgroundColor: '#FFF', borderRadius: 24, justifyContent: 'center', alignItems: 'center' }}>
+                        {
+                            props && props.isOnLine && props.isOnLine.isOnLine && props.isOnLine.isOnLine.length != 0 ?
+                                <>
+                                    <Text style={{ fontFamily: 'Lexand', fontSize: 70, color: '#454649' }}>{props.isOnLine.isOnLine.length}{props.isOnLine.isOnLine.length == 1 ? <Text style={{ fontFamily: 'Lexand', fontSize: 15 }}>pothole on route</Text> : <Text style={{ fontFamily: 'Lexand', fontSize: 15 }}>potholes on route</Text>}</Text>
+                                    <Text style={{ fontFamily: 'Lexand', fontSize: 20, color: '#454649' }}>{props.fromName}  •••••••  {props.toName}</Text>
+                                    {
+                                        props.isOnLine.isOnLine.length == 0 ? <Text style={{ fontFamily: 'Lexand', fontSize: 15, color: '#dd2c00', marginTop: height * 0.01 }}>Smoooooth Operator!</Text> : null
+                                    }
+                                    {
+                                        props.isOnLine.isOnLine.length <= 5 && props.isOnLine.isOnLine.length > 0 ? <Text style={{ fontFamily: 'Lexand', fontSize: 15, color: '#1b5e20', marginTop: height * 0.01 }}>Should be a fairly smooth ride!</Text> : null
+                                    }
+                                    {
+                                        props.isOnLine.isOnLine.length > 5 && props.isOnLine.isOnLine.length < 20 ? <Text style={{ fontFamily: 'Lexand', fontSize: 15, color: '#b71c1c', marginTop: height * 0.01 }}>A few bumps, you should be fine!</Text> : null
+                                    }
+                                    {
+                                        props.isOnLine.isOnLine.length > 20 ? <Text style={{ fontFamily: 'Lexand', fontSize: 15, color: '#00c853', marginTop: height * 0.01 }}>You should consider an alternative route!</Text> : null
+                                    }
 
-                            </> : <Text style={{ fontFamily: 'Lexand', fontSize: 25, color: '#454649' }}>Select a route to view data</Text>
-                    }
-                </Card>
+                                </> : <Text style={{ fontFamily: 'Lexand', fontSize: 25, color: '#454649' }}>Select a route to view data</Text>
+                        }
+                    </Card>
+                </View>
+                <Button iconLeft onPress={() => startNavigation()} style={{ width: '90%', justifyContent: 'center', alignItems: 'center', margin: width * 0.04 }}><Text style={{ fontFamily: 'Lexand', fontSize: 20, color: '#fff' }}>Start Navigation</Text></Button>
             </View>
-
-        </View>
-    );
+        )
+    };
 
     const renderHeader = () => (
         <View
@@ -455,14 +560,14 @@ const DirectionsMap = (props) => {
         >
             {
                 isOpen ? <View style={{ height: 10, width: 30, backgroundColor: '#212121', borderRadius: 12 }}></View> :
-                    <Text style={{ fontFamily: 'Lexand', fontSize: 20, color: '#454649' }}>Swipe up for more details</Text>
+                    <Text style={{ fontFamily: 'Lexand', fontSize: 20, color: '#454649' }}>Swipe up to check potholes</Text>
             }
             <Grid style={{ marginTop: height * 0.01 }}>
                 <Col>
                     <Button iconLeft onPress={() => handleButton()} style={{ width: '90%', justifyContent: 'center', alignItems: 'center' }}><Text style={{ fontFamily: 'Lexand', fontSize: 20, color: '#fff' }}>Search</Text></Button>
                 </Col>
                 <Col>
-                    <Button iconLeft onPress={() => handleGetDirections()} style={{ width: '90%', justifyContent: 'center', alignItems: 'center', marginLeft: width * 0.04 }}><Text style={{ fontFamily: 'Lexand', fontSize: 20, color: '#fff' }}>Start</Text></Button>
+                    <Button iconLeft onPress={() => handleGetDirections()} style={{ width: '90%', justifyContent: 'center', alignItems: 'center', marginLeft: width * 0.04 }}><Text style={{ fontFamily: 'Lexand', fontSize: 20, color: '#fff' }}>Details</Text></Button>
                 </Col>
             </Grid>
 
@@ -470,7 +575,7 @@ const DirectionsMap = (props) => {
     );
 
     //const sheetRef = React.useRef(null);
-
+    console.log("PRAPS IDHAR HAI", props.isOnLine);
     return (
         <>
             <View
@@ -478,32 +583,54 @@ const DirectionsMap = (props) => {
                     flex: 1,
                 }}
             >
-                <MapView
-                    customMapStyle={toggle ? darkStyle : lightStyle}
-                    initialRegion={initialRegion ? {
-                        ...initialRegion,
-                        latitudeDelta: 0.08,
-                        longitudeDelta: 0.08 * ASPECT_RATIO,
-                    } : tempRegion}
-                    onRegionChangeComplete={reg => {
-                        if (reg) {
-                            setInitialRegion(reg)
-                        }
-                    }}
-                    style={{ flex: 1 }} provider={PROVIDER_GOOGLE}>
-                    <MapViewDirections
-                        origin={props.from}
-                        destination={props.to}
-                        apikey={GOOGLE_PLACES_API_KEY}
-                        strokeWidth={3}
-                        strokeColor="hotpink"
-                    />
-                    <Switch
-                        value={toggle}
-                        onChange={() => setToggle(!toggle)}
-                        style={{ top: height * 0.09, left: width * 0.85 }}
-                    />
-                </MapView>
+                {
+                    !showMap ?
+                        <MapView
+                            customMapStyle={toggle ? darkStyle : lightStyle}
+                            initialRegion={initialRegion ? {
+                                ...initialRegion,
+                                latitudeDelta: 0.08,
+                                longitudeDelta: 0.08 * ASPECT_RATIO,
+                            } : tempRegion}
+                            onRegionChangeComplete={reg => {
+                                if (reg) {
+                                    setInitialRegion(reg)
+                                }
+                            }}
+                            style={{ flex: 1 }} provider={PROVIDER_GOOGLE}>
+                            <MapViewDirections
+                                origin={props.from}
+                                destination={props.to}
+                                apikey={GOOGLE_PLACES_API_KEY}
+                                strokeWidth={3}
+                                strokeColor="hotpink"
+                            />
+                            <Switch
+                                value={toggle}
+                                onChange={() => setToggle(!toggle)}
+                                style={{ top: height * 0.09, left: width * 0.85 }}
+                            />
+                            {
+                                props && props.isOnLine && props.isOnLine.isOnLine && props.isOnLine.isOnLine.length != 0 ?
+                                    props.isOnLine.isOnLine.map((marker, key) => {
+                                        console.log("Marker: ", marker)
+                                        return (
+                                            <Marker key={key} coordinate={{ latitude: Number(marker.latitude), longitude: Number(marker.longitude) }}><Image source={require('../imgs/pothole.png')} style={{ height: 35, width: 35 }} /></Marker>
+                                        )
+
+                                    }) : null
+                            }
+                        </MapView> :
+                        <View style={{ marginTop: height * 0.05, height: height * 0.78 }}>
+                            <StatusBar style="dark" />
+                            <WebView
+                                source={{
+                                    uri: `https://maps.google.com/?saddr=${props.fromName}&daddr=${props.toName}`
+                                }}
+                            />
+                            <Button iconLeft onPress={() => resetting()} style={{ width: width * 0.1, justifyContent: 'center', alignItems: 'center', position: 'absolute', marginTop: height * 0.01, marginLeft: width * 0.01 }} color={"#4B85F2"}><Text style={{ fontSize: 20, color: 'black' }}>{'<'}</Text></Button>
+                        </View>
+                }
             </View>
             <BottomSheet
                 //ref={sheetRef}
@@ -511,8 +638,8 @@ const DirectionsMap = (props) => {
                 renderContent={renderContent}
                 initialSnap={1}
                 renderHeader={renderHeader}
-                onOpenEnd={() => setIsOpen(true)}
-                onCloseEnd={() => setIsOpen(false)}
+            // onOpenEnd={() => setIsOpen(true)}
+            // onCloseEnd={() => setIsOpen(false)}
             />
         </>
     )

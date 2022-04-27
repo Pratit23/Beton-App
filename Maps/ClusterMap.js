@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import MapView from "react-native-map-clustering";
 import { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
@@ -13,6 +13,7 @@ import { FAB } from 'react-native-paper'
 import { allBaseReports } from '../queries/query';
 import { graphql } from 'react-apollo';
 import { flowRight as composey } from 'lodash';
+import LottieView from 'lottie-react-native';
 
 const GOOGLE_PLACES_API_KEY = 'AIzaSyBvZX8lKdR6oCkPOn2z-xmw0JHMEzrM_6w';
 
@@ -37,6 +38,7 @@ const ClusterMap = (props) => {
     const [tempRegion, setTempRegion] = useState(null)
     const [markers, setMarkers] = useState([])
     const [showSearch, setShowSearch] = useState(false)
+    const animation = useRef(null);
 
 
     const handleAddress = (data) => {
@@ -63,6 +65,13 @@ const ClusterMap = (props) => {
             .catch(error => console.warn(error));
     }
 
+    const handleSearch = () => {
+        setShowSearch(true)
+        setTimeout(() => {
+            animation.current.play();
+        }, 200);
+    }
+
     useEffect(() => {
         console.log("Useeffect for fetching", props)
         if (props && props.allBaseReports && !props.allBaseReports.loading) {
@@ -77,6 +86,7 @@ const ClusterMap = (props) => {
                     latitude: Number(i.location.split(" ")[0]),
                     longitude: Number(i.location.split(" ")[1])
                 }
+
                 return test;
             })
             global.allMarkers = temp
@@ -157,6 +167,9 @@ const ClusterMap = (props) => {
                             }
                         }}
                     >
+                        <View style={{ height: height * 0.4, width: width, marginTop: height * 0.2 }}>
+                            <LottieView ref={animation} source={require('../assets/Lottie/selectLoco.json')} loop={true} />
+                        </View>
                         <FAB
                             style={styles.fab}
                             small
@@ -164,7 +177,7 @@ const ClusterMap = (props) => {
                             onPress={() => setShowSearch(false)}
                         />
                     </GooglePlacesAutocomplete>
-                    : <ClusterChild initRegion={tempRegion} handleSearch={()=>setShowSearch(true)}/>
+                    : <ClusterChild initRegion={tempRegion} handleSearch={handleSearch} />
             }
         </>
     )

@@ -1,15 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { AuthContext } from './auth/context'
 import Main from './main'
 import { ApolloProvider } from 'react-apollo';
 import ApolloClient from 'apollo-boost';
-
+import NetworkError from './layouts/NetworkError'
 
 export default function App(props) {
 
+  const [showErrorScreen, setShowErrorScreen] = useState(false)
+
+  const reset = () => {
+    setShowErrorScreen(false)
+  }
+
   const client = new ApolloClient({
-    uri: 'https://beton-web.herokuapp.com/graphql',
+    uri: 'http://beton-web.herokuapp.com/graphql',
     onError: ({ response, operation, graphQLErrors, networkError }) => {
       if (operation.operationName === "IgnoreErrorsQuery") {
         response.errors = null;
@@ -18,8 +24,10 @@ export default function App(props) {
         console.log("Graphql error: ", graphQLErrors)
       }
       if (networkError) {
-        alert("Couldnt connect to our servers! Please check you internet connection")
+        setShowErrorScreen(true)
         console.log("Network error")
+      } else {
+        setShowErrorScreen(false)
       }
       if (response?.errors) {
         console.log("Response error")
@@ -29,9 +37,15 @@ export default function App(props) {
   })
 
   return (
-    <ApolloProvider client={client}>
-      <Main />
-    </ApolloProvider>
+    <>
+      {
+        !showErrorScreen ?
+          <ApolloProvider client={client}>
+            <Main />
+          </ApolloProvider> :
+          <NetworkError reset={reset} />
+      }
+    </>
   );
 }
 
